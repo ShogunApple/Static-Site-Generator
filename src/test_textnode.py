@@ -1,6 +1,5 @@
 import unittest
-
-from textnode import TextNode, TextType, text_node_to_html
+from textnode import TextNode, TextType, extract_markdown_images, text_node_to_html, extract_markdown_links
 
 
 class TestTextNode(unittest.TestCase):
@@ -56,6 +55,16 @@ class TestTextNode(unittest.TestCase):
         self.assertEqual(html_node.tag, "img")
         self.assertEqual(html_node.value, "")
         self.assertEqual(html_node.props, {"src": "https://example.com/image.png", "alt": "This is a text node"})
+    
+class TestRegex(unittest.TestCase):
+    def test_extract_markdown_images(self):
+        text = "This is a markdown image ![alt text](https://example.com/image.png) and another one ![another alt text](https://example.com/another-image.png)"
+        images = extract_markdown_images(text)
+        self.assertEqual(images, [("alt text", "https://example.com/image.png"), ("another alt text", "https://example.com/another-image.png")])
+    def test_extract_markdown_links(self):
+        text = "This is a markdown link [link text](https://example.com) and another one [another link text](https://example.com/another-link)"
+        links = extract_markdown_links(text)
+        self.assertEqual(links, [("link text", "https://example.com"), ("another link text", "https://example.com/another-link")])
 
 
 
