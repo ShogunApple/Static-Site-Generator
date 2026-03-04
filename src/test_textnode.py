@@ -1,5 +1,6 @@
 import unittest
 from textnode import TextNode, TextType, extract_markdown_images, text_node_to_html, extract_markdown_links
+from node_maker import text_to_textnodes
 
 
 class TestTextNode(unittest.TestCase):
@@ -38,17 +39,20 @@ class TestTextNode(unittest.TestCase):
         html_node = text_node_to_html(node)
         self.assertEqual(html_node.tag, "i")
         self.assertEqual(html_node.value, "This is a text node")
+
     def test_code(self):
         node = TextNode("This is a text node", TextType.CODE)
         html_node = text_node_to_html(node)
         self.assertEqual(html_node.tag, "code")
         self.assertEqual(html_node.value, "This is a text node")
+
     def test_link(self):
         node = TextNode("This is a text node", TextType.LINK, "https://example.com")
         html_node = text_node_to_html(node)
         self.assertEqual(html_node.tag, "a")
         self.assertEqual(html_node.value, "This is a text node")
         self.assertEqual(html_node.props, {"href": "https://example.com"})
+
     def test_image(self):
         node = TextNode("This is a text node", TextType.IMAGE, "https://example.com/image.png")
         html_node = text_node_to_html(node)
@@ -56,6 +60,21 @@ class TestTextNode(unittest.TestCase):
         self.assertEqual(html_node.value, "")
         self.assertEqual(html_node.props, {"src": "https://example.com/image.png", "alt": "This is a text node"})
     
+    def test_text_to_textnodes(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        nodes = text_to_textnodes(text)
+        self.assertEqual(len(nodes), 10)
+        self.assertEqual(nodes[0], TextNode("This is ", TextType.TEXT))
+        self.assertEqual(nodes[1], TextNode("text", TextType.BOLD))
+        self.assertEqual(nodes[2], TextNode(" with an ", TextType.TEXT))
+        self.assertEqual(nodes[3], TextNode("italic", TextType.ITALIC))
+        self.assertEqual(nodes[4], TextNode(" word and a ", TextType.TEXT))
+        self.assertEqual(nodes[5], TextNode("code block", TextType.CODE))
+        self.assertEqual(nodes[6], TextNode(" and an ", TextType.TEXT))
+        self.assertEqual(nodes[7], TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"))
+        self.assertEqual(nodes[8], TextNode(" and a ", TextType.TEXT))
+        self.assertEqual(nodes[9], TextNode("link", TextType.LINK, "https://boot.dev"))
+
 class TestRegex(unittest.TestCase):
     def test_extract_markdown_images(self):
         text = "This is a markdown image ![alt text](https://example.com/image.png) and another one ![another alt text](https://example.com/another-image.png)"
