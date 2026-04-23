@@ -1,6 +1,9 @@
 from textnode import TextType, TextNode
+from copystatic import copy_dir
+from gencontent import generate_page, generate_pages_recursive
 def main():
-    object = TextNode("Hello World", TextType.TEXT, "https://example.com")
-    print(object.__repr__())
+    copy_dir("static", "public")
+
+    generate_pages_recursive("content", "template.html", "public")
 
 main()

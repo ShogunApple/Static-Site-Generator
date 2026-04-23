@@ -1,4 +1,7 @@
-from textnode import TextType, TextNode, extract_markdown_images, extract_markdown_links
+from textnode import TextType, TextNode, extract_markdown_images, extract_markdown_links, text_node_to_html
+from htmlnode import LeafNode, ParentNode
+from block_maker import markdown_to_blocks, block_to_block_type, BlockType
+
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     new_nodes = []
@@ -114,3 +117,90 @@ def text_to_textnodes(text):
         else:
             new_nodes.append(node)
     return new_nodes
+# make a parent node that is your div. Its children will be the blocks.
+#Split markdown into block with markdown_to_blocks
+#each block is basically a paragraph that will have text markdown in it.
+#the type of block will be defined
+#loop over each block:
+#   get type of block with block_to_block_type
+#   make a parent node with the tag of the block type. all of the text will be in the children.
+#   for each block, run text_to_textnodes to get a list of all the text nodes with correct types.
+#   Loop over the list from text_to_textnodes
+#       turn them all into leaf_nodes, and add them as children to the parent node. Use a helper function for this.
+#   add the parent node to the big div parent node.
+# at the end return the big div.
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    parent_nodes = []
+    for block in blocks:
+        parent_block = block_to_html_node(block)
+        parent_nodes.append(parent_block)
+    return ParentNode("div", parent_nodes)
+
+#Helper function that takes a block and turn it into a parent node depending on the block type.
+#uses helper functions for each block type
+def block_to_html_node(block):
+    result = block_to_block_type(block)
+    if result == BlockType.PARAGRAPH:
+        return block_to_paragraph_node(block)
+    elif result == BlockType.HEADING:
+        return block_to_heading_node(block)
+    elif result == BlockType.CODE:
+        return block_to_code_node(block)
+    elif result == BlockType.QUOTE:
+        return block_to_quote_node(block)
+    elif result == BlockType.UNORDERED_LIST:
+        return block_to_unordered_list_node(block)
+    elif result == BlockType.ORDERED_LIST:
+        return block_to_ordered_list_node(block)
+
+def block_to_paragraph_node(block):
+    block = block.replace("\n", " ")
+    children = text_to_children(block)
+    return ParentNode("p", children)
+
+def block_to_heading_node(block):
+    count = len(block) - len(block.lstrip("#"))
+    block = block.strip("#").strip()
+    children = text_to_children(block)
+    return ParentNode(f"h{count}", children)
+
+def block_to_code_node(block):
+    block = block.removeprefix("```\n").removesuffix("```")
+    child = LeafNode(None, block)
+    return ParentNode("pre", [ParentNode("code", [child])])
+
+def block_to_quote_node(block):
+    lines = block.split("\n")
+    new_lines = []
+    for line in lines:
+        line = line.lstrip(">").strip()
+        new_lines.append(line)
+    block = "\n".join(new_lines)
+    children = text_to_children(block)
+    return ParentNode("blockquote", children)
+
+def block_to_unordered_list_node(block):
+    split_list = block.split("\n")
+    list_nodes = []
+    for line in split_list:
+        line = line.strip("-").strip()
+        children = text_to_children(line)
+        list_nodes.append(ParentNode("li", children))
+    return ParentNode("ul", list_nodes)
+
+def block_to_ordered_list_node(block):
+    split_list = block.split("\n")
+    list_nodes = []
+    for line in split_list:
+        line = line.split(". ",1)[1]
+        children = text_to_children(line)
+        list_nodes.append(ParentNode("li", children))
+    return ParentNode("ol", list_nodes)
+
+def text_to_children(text):
+    html_nodes = []
+    text_nodes = text_to_textnodes(text)
+    for node in text_nodes:
+        html_nodes.append(text_node_to_html(node))
+    return html_nodes
